@@ -339,3 +339,10 @@ def getmatchtable(link_spieltag):
     }
     table.append(table_entry)
   return table
+
+getmatchday(link_spieltag)
+#matchday = getmatchday(link_spieltag)
+matchtable = getmatchtable(link_spieltag)
+#json_object = json.dumps(matchday, indent = 2)
+json_object = json.dumps(matchtable, indent = 2)
+print(json_object)
