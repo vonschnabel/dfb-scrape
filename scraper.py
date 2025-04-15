@@ -5,15 +5,15 @@ import subprocess
 import xml.etree.ElementTree as ET
 import html
 import json
-from flask import Flask, render_template, request, jsonify
+#from flask import Flask, render_template, request, jsonify
 
-app = Flask(__name__)
+#app = Flask(__name__)
 
 
 fontbaseurl = "https://www.fussball.de/export.fontface/-/format/woff/id/"
 fontappendixurl = "/type/font"
 fontsbasepath = "./fonts/"
-ttxcmdpath = "/home/ast/.local/bin/ttx"
+ttxcmdpath = "/home/admin/.local/bin/ttx"
 
 # Funktion zum Laden des Unicode-Mappings
 def load_unicode_mapping(ttx_file_path):
@@ -46,6 +46,10 @@ def getmatchday(url):
   r = requests.get(url)
   r.encoding = r.apparent_encoding  # Korrekte Zeichensatz-Erkennung
   soup = BeautifulSoup(r.text, 'html.parser')
+
+  tmp = soup.find('select', attrs={'name': 'spieltag'})
+  matchdaynumber = tmp.find('option', attrs={'selected': 'selected'})
+  matchdaynumber = matchdaynumber.text.split('.')[0]
 
   # Das Element finden, nach dem alles entfernt werden soll
   cutoff_element = soup.find("td", {"class": "row-headline"}, string="Verlegte Spiele außerhalb des Spieltages")
@@ -88,7 +92,11 @@ def getmatchday(url):
 
   # Schritt 2: Unicode-Zuordnung aus TTX-Datei erstellen
 
-  matchday = []
+  matchday = {
+    "matchday": matchdaynumber,
+    "matches": []
+  }
+
   # Matches extrahieren
   fixtures = soup.find_all("div", {"class": "fixtures-matches-table"})
   if fixtures:
@@ -214,7 +222,7 @@ def getmatchday(url):
           "hometeamid": hometeamid,
           "awayteamid": awayteamid
         }
-        matchday.append(match_object)
+        matchday["matches"].append(match_object)
 
     return matchday
   else:
@@ -226,13 +234,80 @@ def getmatchrange(url):
   soup = BeautifulSoup(r.text, 'html.parser')
   tmp = soup.find("a", string="Spieltage / Tabellen")
   matchdaylink = tmp.get('href')
-  
+
   r = requests.get(matchdaylink)
   r.encoding = r.apparent_encoding  # Korrekte Zeichensatz-Erkennung
   soup = BeautifulSoup(r.text, 'html.parser')
   tmp = soup.find('select', attrs={'name': 'spieltag'})
-  options = tmp.find_all('option')  
-  firstelement = options[0].text.split('.')[0]
-  lastelement = options[-1].text.split('.')[0]
+  options = tmp.find_all('option')
+  firstelement = int(options[0].text.split('.')[0])
+  lastelement = int(options[-1].text.split('.')[0])
   print(firstelement)
   print(lastelement)
+  return firstelement, lastelement
+
+def getlinks(url, min=None, max=None):
+  r = requests.get(url)
+  r.encoding = r.apparent_encoding  # Korrekte Zeichensatz-Erkennung
+  soup = BeautifulSoup(r.text, 'html.parser')
+  tmp = soup.find("a", string="Spieltage / Tabellen")
+  matchdaylink = tmp.get('href')
+
+  r = requests.get(matchdaylink)
+  r.encoding = r.apparent_encoding  # Korrekte Zeichensatz-Erkennung
+  soup = BeautifulSoup(r.text, 'html.parser')
+  tmp = soup.find('select', attrs={'name': 'spieltag'})
+  options = tmp.find_all('option')
+  firstelement = int(options[0].text.split('.')[0])
+  lastelement = int(options[-1].text.split('.')[0])
+
+  try:
+    if(max > min):
+      pass
+    else:
+      print("<< Min - Max Error>>")
+      return
+  except:
+    print("min or max are no int values")
+    return
+  if(min == None):
+    min = int(firstelement)
+  if(max == None):
+    max = int(lastelement)
+  if(min < firstelement or max > lastelement):
+    print("<< Min - Max Error>>")
+    return
+  links = []
+  for item in options:
+    if(int(item.text.split('.')[0]) >= min and int(item.text.split('.')[0]) <= max):
+      links.append(item.get("data-href"))
+
+  print(links)
+  return links
+
+#url = "https://www.fussball.de/spieltagsuebersicht/3liga-deutschland-3-liga-herren-saison2425-deutschland/-/staffel/02Q2QFKHQO000007VS5489B3VVLDQQH4-G#!/"
+#url = "https://www.fussball.de/spieltag/3liga-deutschland-3-liga-herren-saison2425-deutschland/-/spieltag/8/staffel/02Q2QFKHQO000007VS5489B3VVLDQQH4-G"
+url = "https://www.fussball.de/spieltagsuebersicht/nofv-oberliga-sued-deutschland-oberliga-herren-saison2324-deutschland/-/staffel/02M4M5VPIG00000DVS5489B4VUAB0UC4-G#!/"
+#object = getmatchday(url)
+#json_object = json.dumps(object, indent = 2)
+#print(json_object)
+#getmatchrange(url)
+#getlinks(url)
+#getlinks(url, max=8, min=4)
+
+firstitem, lastitem = getmatchrange(url)
+print("firstitem:",firstitem)
+print("lastitem:",lastitem)
+print()
+matches = getlinks(url, 1, 2)
+seasonlist = []
+for match in matches:
+  print("url:",url)
+  item = getmatchday(match)
+  json_object = json.dumps(item, indent = 2)
+  seasonlist.append(json_object)
+  print(json_object)
+  print()
+  print()
+
+print(seasonlist)
