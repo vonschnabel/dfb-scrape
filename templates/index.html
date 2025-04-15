@@ -3,12 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <title>URL Eingabe</title>
+  <style>
+    .slider-container {
+      margin-top: 20px;
+    }
+    .slider-values {
+      margin-top: 10px;
+    }
+    input[type=range] {
+      width: 300px;
+    }
+  </style>
+  <script>
+    let minSlider, maxSlider;
+
+    function handleBlur(event) {
+      const url = event.target.value;
+      if (url) {
+        fetch(`/loadmatchrange?url=${encodeURIComponent(url)}`)
+          .then(response => response.json())
+          .then(data => {
+            createSlider(data.min, data.max);
+          });
+      }
+    }
+
+    function createSlider(minVal, maxVal) {
+      const container = document.getElementById('sliderContainer');
+      container.innerHTML = '';
+
+      container.innerHTML = `
+        <input type="range" id="minRange" min="${minVal}" max="${maxVal}" value="${minVal}">
+        <input type="range" id="maxRange" min="${minVal}" max="${maxVal}" value="${maxVal}">
+        <div class="slider-values">
+          Spieltag: <span id="rangeOutput">Min ${minVal} - ${maxVal} Max</span>
+        </div>
+      `;
+
+      minSlider = document.getElementById('minRange');
+      maxSlider = document.getElementById('maxRange');
+      const output = document.getElementById('rangeOutput');
+
+      // Update-Funktion für beide Slider
+      function updateOutput() {
+        let minValue = parseInt(minSlider.value);
+        let maxValue = parseInt(maxSlider.value);
+
+        // Überlappung verhindern
+        if (minValue > maxValue) {
+          if (event.target === minSlider) {
+            maxSlider.value = minValue;
+            maxValue = minValue;
+          } else {
+            minSlider.value = maxValue;
+            minValue = maxValue;
+          }
+        }
+
+        output.textContent = `${minValue} - ${maxValue}`;
+
+        // Hidden-Form-Inputs aktualisieren
+        document.getElementById('min_hidden').value = minValue;
+        document.getElementById('max_hidden').value = maxValue;
+      }
+
+      minSlider.addEventListener('input', updateOutput);
+      maxSlider.addEventListener('input', updateOutput);
+
+      // Initial setzen
+      updateOutput();
+    }
+  </script>
 </head>
 <body>
   <h1>Bitte eine URL eingeben:</h1>
-  <form method="POST">
-    <input type="text" name="url_input" placeholder="https://example.com" required>
+  <form action="/loadmatches" method="POST">
+    <input type="text" name="url_input" placeholder="https://example.com" required onblur="handleBlur(event)">
+    
+    <!-- Hidden inputs für min & max -->
+    <input type="hidden" name="min_value" id="min_hidden" value="">
+    <input type="hidden" name="max_value" id="max_hidden" value="">
+
     <button type="submit">Absenden</button>
   </form>
+
+  <div class="slider-container" id="sliderContainer"></div>
+  <br>
+  <a href="/downloads">Downloads</a>
 </body>
 </html>
