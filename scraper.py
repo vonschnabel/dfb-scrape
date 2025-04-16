@@ -221,6 +221,14 @@ def getmatchday(url):
               score_right += unicode_map.get(code, "?")
 
           translated_score = f"{score_left}:{score_right}"
+          matchdetails = fixturescore.find("a")["href"]
+          r2 = requests.get(matchdetails)
+          r2.encoding = r2.apparent_encoding  # Korrekte Zeichensatz-Erkennung
+          soup2 = BeautifulSoup(r2.text, 'html.parser')
+          halftimescore = soup2.find("span", {"class": "half-result"}).text
+          halftimescore = halftimescore.replace('[', '')
+          halftimescore = halftimescore.replace(']', '')
+          halftimescore = halftimescore.replace(' ', '')          
 
       #print(f"Match date: {translated_date}, Score: {translated_score}")
       if(translated_date != ""):
@@ -425,8 +433,6 @@ def getlinks(url, min=None, max=None):
 
 
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify
-
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
@@ -512,6 +518,7 @@ def loadmatches():
           'datum': match['date'].strip(),
           'uhrzeit': match['time'],
           'ergebnis': match['score'],
+          'halbzeitergebnis': match['halftimescore'],
           'heimteam': match['hometeamname'],
           'gastteam': match['awayteamname']
         }
