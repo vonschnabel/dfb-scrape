@@ -502,7 +502,7 @@ def loadmatches():
     with open("downloads/" +filename +"-tablelist.json", "w", encoding="utf-8") as file:
       json.dump(tablelist, file, ensure_ascii=False, indent=2)  
 
-    fieldnamesmatchday = ['liga', 'saison', 'spieltag', 'datum', 'uhrzeit', 'ergebnis', 'heimteam', 'gastteam']
+    fieldnamesmatchday = ['liga', 'saison', 'spieltag', 'datum', 'uhrzeit', 'ergebnis', 'halbzeitergebnis', 'heimteam', 'gastteam']
     fieldnamestable = ['liga', 'saison', 'spieltag', 'tabellenplatz', 'teamname', 'punkte', 'spiele', 'siege', 'unentschieden', 'niederlagen', 'tore', 'gegentore', 'tordifferenz', 'tabellenplatzaenderung', 'aufstieg-abstieg']
 
     rows = []
