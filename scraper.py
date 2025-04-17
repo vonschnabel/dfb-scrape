@@ -12,7 +12,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 fontbaseurl = "https://www.fussball.de/export.fontface/-/format/woff/id/"
 fontappendixurl = "/type/font"
 fontsbasepath = "./fonts/"
-ttxcmdpath = "/home/ast/.local/bin/ttx"
+ttxcmdpath = "/home/ast/.local/bin/ttx" #"/usr/local/bin/ttx"
 
 def sanitize_filename(filename):
   forbidden = r'[\\/:*?"<>|]'
