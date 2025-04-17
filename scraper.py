@@ -225,10 +225,17 @@ def getmatchday(url):
           r2 = requests.get(matchdetails)
           r2.encoding = r2.apparent_encoding  # Korrekte Zeichensatz-Erkennung
           soup2 = BeautifulSoup(r2.text, 'html.parser')
-          halftimescore = soup2.find("span", {"class": "half-result"}).text
-          halftimescore = halftimescore.replace('[', '')
-          halftimescore = halftimescore.replace(']', '')
-          halftimescore = halftimescore.replace(' ', '')          
+          if soup2 is not None:
+            halftimescore = soup2.find("span", {"class": "half-result"})
+            if halftimescore is not None:
+              halftimescore = halftimescore.text
+              halftimescore = halftimescore.replace('[', '')
+              halftimescore = halftimescore.replace(']', '')
+              halftimescore = halftimescore.replace(' ', '')
+            else:
+              halftimescore = "--"
+          else:
+            halftimescore = "--"
 
       #print(f"Match date: {translated_date}, Score: {translated_score}")
       if(translated_date != ""):
@@ -236,6 +243,7 @@ def getmatchday(url):
           "date": translated_date,
           "time": translated_time,
           "score": translated_score,
+          "halftimescore": halftimescore,
           "hometeamname": hometeamname,
           "awayteamname": awayteamname,
           "hometeamid": hometeamid,
@@ -268,111 +276,113 @@ def getmatchtable(url):
   }
 
   table_element = soup.find("div", {"id": "fixture-league-tables"})
-  table_body = table_element.find("tbody")
+  if table_element:
+    table_body = table_element.find("tbody")
+    if table_body:
+      table_teams = table_body.find_all("tr")
+      for team_row in table_teams:
+        teamname = team_row.find("div", {"class": "club-name"})
+        teamname = teamname.decode_contents()
+        teamname = teamname.strip()
+        tmp = teamname.split("\t")
+        teamname = "".join(tmp)
 
-  table_teams = table_body.find_all("tr")
-  for team_row in table_teams:
-    teamname = team_row.find("div", {"class": "club-name"})
-    teamname = teamname.decode_contents()
-    teamname = teamname.strip()
-    tmp = teamname.split("\t")
-    teamname = "".join(tmp)
+        teamid_tmp = team_row.find("td", {"class": "column-club"})
+        teamid = teamid_tmp.find("a", {"class": "club-wrapper"})
+        teamid = teamid.get('href')
+        if(teamid is not None):
+          teamid = teamid.split("team-id/")
+          teamid = teamid[1]
 
-    teamid_tmp = team_row.find("td", {"class": "column-club"})
-    teamid = teamid_tmp.find("a", {"class": "club-wrapper"})
-    teamid = teamid.get('href')
-    if(teamid is not None):
-      teamid = teamid.split("team-id/")
-      teamid = teamid[1]
+        promotion_relegation = team_row.get('class')
+        if(promotion_relegation is not None):
+          promotion_relegation = promotion_relegation[0]
+        if(promotion_relegation in ["row-promotion","row-promotion-playoff","row-relegation","row-relegation-playoff"]):
+          promotion_relegation = promotion_relegation.replace("row-", "")
+        else:
+          promotion_relegation = None
 
-    promotion_relegation = team_row.get('class')
-    if(promotion_relegation is not None):
-      promotion_relegation = promotion_relegation[0]
-    if(promotion_relegation in ["row-promotion","row-promotion-playoff","row-relegation","row-relegation-playoff"]):
-      promotion_relegation = promotion_relegation.replace("row-", "")
-    else:
-      promotion_relegation = None
+        rank = team_row.find("td", {"class": "column-rank"})
+        rank = rank.decode_contents()
+        rank = rank.strip()
+        tmp = rank.split("\t")
+        rank = "".join(tmp)
+        rank = rank.replace('.', '')
 
-    rank = team_row.find("td", {"class": "column-rank"})
-    rank = rank.decode_contents()
-    rank = rank.strip()
-    tmp = rank.split("\t")
-    rank = "".join(tmp)
-    rank = rank.replace('.', '')
+        points = team_row.find("td", {"class": "column-points"})
+        points = points.decode_contents()
+        points = points.strip()
+        #tmp = points.split("\t")
+        #points = "".join(tmp)
 
-    points = team_row.find("td", {"class": "column-points"})
-    points = points.decode_contents()
-    points = points.strip()
-    #tmp = points.split("\t")
-    #points = "".join(tmp)
+        miscdata = team_row.find_all("td")
 
-    miscdata = team_row.find_all("td")
+        rank_change = team_row.find("td", {"class": "column-icon"})
+        rank_change = rank_change.find("span")
+        rank_change = rank_change.get('class')[0]
+        rank_change_map = {
+          "up-right": "up", "down-right": "down", "right": "stay"
+        }
+        rank_change = rank_change.replace("icon-arrow-", "")
+        rank_change = rank_change_map[rank_change]
 
-    rank_change = team_row.find("td", {"class": "column-icon"})
-    rank_change = rank_change.find("span")
-    rank_change = rank_change.get('class')[0]
-    rank_change_map = {
-      "up-right": "up", "down-right": "down", "right": "stay"
-    }
-    rank_change = rank_change.replace("icon-arrow-", "")
-    rank_change = rank_change_map[rank_change]
+        matches_played = miscdata[3].decode_contents()
+        matches_played = matches_played.strip()
+        #tmp = matches_played.split("\t")
+        #matches_played = "".join(tmp)
 
-    matches_played = miscdata[3].decode_contents()
-    matches_played = matches_played.strip()
-    #tmp = matches_played.split("\t")
-    #matches_played = "".join(tmp)
+        won = miscdata[4].decode_contents()
+        won = won.strip()
+        #tmp = won.split("\t")
+        #won = "".join(tmp)
 
-    won = miscdata[4].decode_contents()
-    won = won.strip()
-    #tmp = won.split("\t")
-    #won = "".join(tmp)
+        draw = miscdata[5].decode_contents()
+        draw = draw.strip()
+        #tmp = draw.split("\t")
+        #draw = "".join(tmp)
 
-    draw = miscdata[5].decode_contents()
-    draw = draw.strip()
-    #tmp = draw.split("\t")
-    #draw = "".join(tmp)
+        lost = miscdata[6].decode_contents()
+        lost = lost.strip()
+        #tmp = lost.split("\t")
+        #lost = "".join(tmp)
 
-    lost = miscdata[6].decode_contents()
-    lost = lost.strip()
-    #tmp = lost.split("\t")
-    #lost = "".join(tmp)
+        goals_scored = miscdata[7].decode_contents()
+        goals_scored = goals_scored.strip()
+        #tmp = goals_scored.split("\t")
+        #goals_scored = "".join(tmp)
+        goals_scored = goals_scored.replace(" ","")
+        tmp_goals_scored = goals_scored.split(":")
+        goals_scored = tmp_goals_scored[0]
 
-    goals_scored = miscdata[7].decode_contents()
-    goals_scored = goals_scored.strip()
-    #tmp = goals_scored.split("\t")
-    #goals_scored = "".join(tmp)
-    goals_scored = goals_scored.replace(" ","")
-    tmp_goals_scored = goals_scored.split(":")
-    goals_scored = tmp_goals_scored[0]
+        goals_conceded = tmp_goals_scored[1]
 
-    goals_conceded = tmp_goals_scored[1]
-
-#row-promotion
-#row-promotion-playoff
-#row-relegation
-#row-relegation-playoff
-#row-promotion odd
-#row-promotion-playoff odd
-#row-relegation odd
-#row-relegation-playoff odd
+    #row-promotion
+    #row-promotion-playoff
+    #row-relegation
+    #row-relegation-playoff
+    #row-promotion odd
+    #row-promotion-playoff odd
+    #row-relegation odd
+    #row-relegation-playoff odd
 
 
-    table_entry = {
-      "teamname": teamname,
-      "teamid": teamid,
-      "points": points,
-      "goals_scored": goals_scored,
-      "goals_conceded": goals_conceded,
-      "won": won,
-      "draw": draw,
-      "lost": lost,
-      "matches_played": matches_played,
-      "rank": rank,
-      "rank_change": rank_change,
-      "promotion_relegation": promotion_relegation
-    }
-    #table.append(table_entry)
-    table["table"].append(table_entry)
+        table_entry = {
+          "teamname": teamname,
+          "teamid": teamid,
+          "points": points,
+          "goals_scored": goals_scored,
+          "goals_conceded": goals_conceded,
+          "won": won,
+          "draw": draw,
+          "lost": lost,
+          "matches_played": matches_played,
+          "rank": rank,
+          "rank_change": rank_change,
+          "promotion_relegation": promotion_relegation
+        }
+        #table.append(table_entry)
+        table["table"].append(table_entry)
+
   return table
 
 def getmatchrange(url):
