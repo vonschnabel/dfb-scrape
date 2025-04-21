@@ -59,6 +59,8 @@ def getmatchday(url):
   tmp = soup.find('div', {"class": "stage-content"})
   leaguename = tmp.find('h2').text
   season = tmp.find('h4').text
+  season = season.replace('Saison', '')
+  season = season.strip()
 
   # Das Element finden, nach dem alles entfernt werden soll
   cutoff_element = soup.find("td", {"class": "row-headline"}, string="Verlegte Spiele außerhalb des Spieltages")
@@ -193,6 +195,8 @@ def getmatchday(url):
             translated_date = prevdate
 
       # **⚽ Spielergebnis entschlüsseln**
+      translated_score = "--"
+      halftimescore = "--"
       if fixturescore:
         score_left_span = fixturescore.find("span", {"data-obfuscation": True, "class": "score-left"})
         score_right_span = fixturescore.find("span", {"data-obfuscation": True, "class": "score-right"})
@@ -226,16 +230,16 @@ def getmatchday(url):
           r2.encoding = r2.apparent_encoding  # Korrekte Zeichensatz-Erkennung
           soup2 = BeautifulSoup(r2.text, 'html.parser')
           if soup2 is not None:
-            halftimescore = soup2.find("span", {"class": "half-result"})
-            if halftimescore is not None:
-              halftimescore = halftimescore.text
+            halftimescoreval = soup2.find("span", {"class": "half-result"})
+            if halftimescoreval is not None:
+              halftimescore = halftimescoreval.text
               halftimescore = halftimescore.replace('[', '')
               halftimescore = halftimescore.replace(']', '')
               halftimescore = halftimescore.replace(' ', '')
-            else:
-              halftimescore = "--"
-          else:
-            halftimescore = "--"
+#            else:
+#              halftimescore = "--"
+#          else:
+#            halftimescore = "--"
 
       #print(f"Match date: {translated_date}, Score: {translated_score}")
       if(translated_date != ""):
@@ -267,6 +271,8 @@ def getmatchtable(url):
   tmp = soup.find('div', {"class": "stage-content"})
   leaguename = tmp.find('h2').text
   season = tmp.find('h4').text
+  season = season.replace('Saison', '')
+  season = season.strip()
 
   table = {
     "leaguename": leaguename,
